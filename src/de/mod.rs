@@ -306,12 +306,21 @@ macro_rules! deserialize_fromstr {
 impl<'a, 'de> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     type Error = Error;
 
-    /// Unsupported. Can’t parse a value without knowing its expected type.
-    fn deserialize_any<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        unreachable!()
+        let peek = self.parse_whitespace().ok_or(Error::EofWhileParsingValue)?;
+        match peek {
+            b't' | b'f' => self.deserialize_bool(visitor),
+            b'"' => self.deserialize_str(visitor),
+            b'[' => self.deserialize_seq(visitor),
+            b'{' => self.deserialize_map(visitor),
+            b'0'..=b'9' => self.deserialize_u64(visitor),
+            b'-' => self.deserialize_i64(visitor),
+            b',' | b'}' | b']' => Err(Error::ExpectedSomeValue),
+            _ => Err(Error::InvalidType),
+        }
     }
 
     fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value>
