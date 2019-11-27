@@ -68,7 +68,7 @@ impl<'de, 'a> de::Deserializer<'de> for MapKey<'a, 'de> {
     where
         V: Visitor<'de>,
     {
-        unreachable!()
+        self.deserialize_str(_visitor)
     }
 
     fn deserialize_bool<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
